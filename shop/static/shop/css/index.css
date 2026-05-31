@@ -1,0 +1,11 @@
+@import './default_shadcn_theme.css';
+@import './theme.css';
+@import './tailwind.css';
+
+/* Здесь можно добавить глобальные стили для ссылок */
+a {
+    transition: color 0.2s;
+}
+a:hover {
+    color: var(--accent);
+}

@@ -1,0 +1,129 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12 max-w-5xl">
+    <h1 class="text-3xl font-bold mb-10 uppercase tracking-tighter">Мои заказы</h1>
+
+    <div class="flex border-b border-gray-200 mb-8" id="orderTabs">
+        <button onclick="switchTab('active')" id="btn-active" 
+                class="tab-btn py-4 px-8 font-bold uppercase tracking-widest text-sm border-b-2 border-black transition-all">
+            Активные
+        </button>
+        <button onclick="switchTab('completed')" id="btn-completed" 
+                class="tab-btn py-4 px-8 font-bold uppercase tracking-widest text-sm border-b-2 border-transparent text-gray-400 hover:text-black transition-all">
+            История
+        </button>
+    </div>
+
+    <div id="tab-active" class="order-tab space-y-6">
+        {% for order in active_orders %}
+        <a href="{% url 'shop:order_detail' order.id %}" 
+           class="block border border-gray-200 p-6 bg-white hover:border-black transition-all hover:shadow-lg group">
+            
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <span class="text-[10px] font-black uppercase text-gray-400 group-hover:text-black transition-colors">
+                        Заказ №{{ order.id }}
+                    </span>
+                    <h3 class="text-xl font-bold uppercase tracking-tight">
+                        {{ order.created_at|date:"d F Y" }}
+                    </h3>
+                </div>
+                <div class="bg-black text-white px-3 py-1 text-[10px] font-bold uppercase">
+                    {{ order.get_order_status_display }}
+                </div>
+            </div>
+
+            <div class="text-sm text-gray-600 mb-4">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Адрес доставки:</p>
+                {{ order.address }}
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-gray-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase font-medium text-gray-400">
+                        {{ order.order_items.count }} поз.
+                    </span>
+                    <span class="text-gray-200">|</span>
+                    <span class="text-[10px] font-bold uppercase text-accent">Подробнее</span>
+                </div>
+                <span class="text-lg font-black">{{ order.total_price }} BYN</span>
+            </div>
+        </a>
+        {% empty %}
+        <div class="text-center py-20 border border-dashed border-gray-200">
+            <p class="text-gray-400 uppercase text-xs font-bold tracking-widest">У вас пока нет активных заказов</p>
+            <a href="{% url 'shop:home' %}" class="inline-block mt-4 text-sm font-black underline uppercase">Перейти к покупкам</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="tab-completed" class="order-tab space-y-6 hidden">
+        {% for order in completed_orders %}
+        <a href="{% url 'shop:order_detail' order.id %}" 
+           class="block border border-gray-100 p-6 bg-gray-50 opacity-80 hover:opacity-100 hover:border-gray-400 transition-all">
+            
+            <div class="flex justify-between items-center">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-bold uppercase text-gray-500">Заказ №{{ order.id }}</span>
+                    <span class="font-bold uppercase tracking-tight text-gray-700">{{ order.created_at|date:"d.m.y" }}</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-bold uppercase block text-gray-400 mb-1">
+                        {{ order.get_order_status_display }}
+                    </span>
+                    <div class="text-sm font-black">{{ order.total_price }} BYN</div>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="text-center py-20">
+            <p class="text-gray-400 uppercase text-xs font-bold tracking-widest">История заказов пуста</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        // Скрываем все вкладки
+        document.querySelectorAll('.order-tab').forEach(el => el.classList.add('hidden'));
+        
+        // Сбрасываем стили кнопок
+        document.querySelectorAll('.tab-btn').forEach(el => {
+            el.classList.remove('border-black', 'text-black');
+            el.classList.add('border-transparent', 'text-gray-400');
+        });
+
+        // Показываем нужную вкладку
+        const activeTab = document.getElementById('tab-' + tab);
+        const activeBtn = document.getElementById('btn-' + tab);
+
+        if (activeTab && activeBtn) {
+            activeTab.classList.remove('hidden');
+            activeBtn.classList.remove('border-transparent', 'text-gray-400');
+            activeBtn.classList.add('border-black', 'text-black');
+        }
+    }
+
+    // Обработка перехода по якорю (если нужно будет открывать историю по ссылке)
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'history') {
+            switchTab('completed');
+        }
+    });
+</script>
+
+<style>
+    /* Плавное появление контента при переключении */
+    .order-tab {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %}

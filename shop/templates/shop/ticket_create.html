@@ -1,0 +1,25 @@
+{% extends 'shop/base.html' %}
+{% block title %}Новое обращение — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-xl mx-auto">
+    <h1 class="text-3xl font-black uppercase tracking-tighter mb-8">Новое обращение</h1>
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2">Тема обращения</label>
+            <select name="subject" class="w-full border border-border bg-background rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                {% for value, label in categories %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-2">Ваше сообщение</label>
+            <textarea name="text" rows="5" placeholder="Опишите проблему подробно..."
+                class="w-full border border-border bg-background rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"></textarea>
+        </div>
+        <button type="submit" class="w-full bg-primary text-primary-foreground py-3 rounded-md font-medium hover:opacity-90 transition-opacity">Отправить</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-24 max-w-xl text-center">
+    <div class="w-20 h-20 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-8">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="5 13l4 4L19 7" />
+        </svg>
+    </div>
+
+    <h1 class="text-4xl font-black uppercase tracking-tighter mb-4">Заказ принят</h1>
+    <p class="text-gray-500 mb-10 uppercase text-xs font-bold tracking-widest">Номер вашего заказа: #{{ order_id }}</p>
+    
+    <div class="space-y-4">
+        <a href="{% url 'shop:order_detail' order_id %}" 
+           class="block w-full bg-black text-white py-4 font-black uppercase tracking-widest text-sm hover:bg-gray-800 transition-colors">
+            Детали заказа
+        </a>
+        
+        <a href="{% url 'shop:product_list' %}" 
+           class="block w-full border border-gray-200 py-4 font-black uppercase tracking-widest text-sm hover:border-black transition-colors">
+            Вернуться в магазин
+        </a>
+    </div>
+
+    <p class="mt-12 text-sm text-gray-400">
+        Мы отправим уведомление о статусе доставки на вашу почту.
+    </p>
+</div>
+{% endblock %}

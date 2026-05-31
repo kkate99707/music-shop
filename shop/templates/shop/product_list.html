@@ -1,0 +1,80 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
+    
+    <aside class="w-full md:w-64 flex-shrink-0">
+        <h2 class="text-xl font-bold mb-6 tracking-tighter uppercase">Каталог</h2>
+        
+        <nav class="space-y-4">
+            <ul class="space-y-2">
+                <li>
+                    <a href="{% url 'shop:product_list' %}" 
+                       class="block py-1 hover:text-primary transition-colors {% if not category %}font-bold text-primary{% endif %}">
+                        Все инструменты
+                    </a>
+                </li>
+                
+                {% for cat in categories %}
+                <li class="space-y-1">
+                    <a href="{% url 'shop:product_list_by_category' cat.slug %}" 
+                       class="block py-1 hover:text-primary transition-colors {% if category == cat %}font-bold text-primary{% endif %}">
+                        {{ cat.name }}
+                    </a>
+                    
+                    {% if cat.children.all %}
+                    <ul class="pl-4 border-l border-border ml-1 space-y-1">
+                        {% for sub in cat.children.all %}
+                        <li>
+                            <a href="{% url 'shop:product_list_by_category' sub.slug %}" 
+                               class="text-sm text-muted-foreground hover:text-primary transition-colors {% if category == sub %}font-bold text-primary text-foreground{% endif %}">
+                                {{ sub.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+
+        <form method="get" class="mt-10 pt-6 border-t border-border">
+            <h3 class="font-bold text-sm mb-4 uppercase">Цена (BYN)</h3>
+            <div class="flex gap-2 mb-4">
+                <input type="number" name="min_price" value="{{ request.GET.min_price }}" placeholder="От" class="w-1/2 bg-background border border-border p-2 text-sm outline-none">
+                <input type="number" name="max_price" value="{{ request.GET.max_price }}" placeholder="До" class="w-1/2 bg-background border border-border p-2 text-sm outline-none">
+            </div>
+            <button type="submit" class="w-full bg-primary text-primary-foreground py-2 text-xs font-bold hover:bg-black transition-all uppercase">Применить</button>
+        </form>
+    </aside>
+
+    <main class="flex-1">
+        <div class="flex justify-between items-end mb-8 border-b border-border pb-4">
+            <h1 class="text-3xl font-bold tracking-tighter uppercase">
+                {% if category %}{{ category.name }}{% else %}Все товары{% endif %}
+            </h1>
+            
+            <form method="get" id="sort-form">
+                {% if request.GET.min_price %}<input type="hidden" name="min_price" value="{{ request.GET.min_price }}">{% endif %}
+    {% if request.GET.max_price %}<input type="hidden" name="max_price" value="{{ request.GET.max_price }}">{% endif %}
+    {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+                <select name="sort" onchange="this.form.submit()" class="bg-transparent border-none text-sm font-medium focus:ring-0 cursor-pointer">
+                    <option value="">Сортировка</option>
+                    <option value="newest" {% if request.GET.sort == 'newest' %}selected{% endif %}>Новинки</option>
+                    <option value="price_asc" {% if request.GET.sort == 'price_asc' %}selected{% endif %}>Сначала дешевле</option>
+                    <option value="price_desc" {% if request.GET.sort == 'price_desc' %}selected{% endif %}>Сначала дороже</option>
+                </select>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for product in products %}
+                {% include 'shop/components/product_card.html' with product=product %}
+            {% empty %}
+                <p class="col-span-full text-center py-20 text-muted-foreground">Инструменты не найдены...</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+:root {
+  --background: #faf8f5; /* Мягкий кремовый фон */
+  --foreground: #2d2d2d;
+  --card: #ffffff;
+  --border: #ddd5ce;
+  --primary: #2d2d2d;
+  --secondary: #f5e6e8;
+  --muted: #e8e3df;
+  --accent: #d4b5c0; /* Розоватый акцент как в Figma */
+  --ring: #d4b5c0;
+  
+  /* Размеры текста */
+  --text-2xl: 1.5rem;
+  --text-xl: 1.25rem;
+  --text-lg: 1.125rem;
+  --text-base: 1rem;
+  --text-sm: 0.875rem;
+  --text-xs: 0.75rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}

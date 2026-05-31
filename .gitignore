@@ -1,0 +1,29 @@
+# Виртуальное окружение
+.venv/
+venv/
+env/
+
+# Скомпилированный Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Переменные окружения 
+.env
+*.env
+
+
+db.sqlite3
+
+# Медиафайлы пользователей
+media/
+
+# VS Code
+.vscode/
+
+# Системные файлы macOS
+.DS_Store
+
+# Логи и временные файлы
+*.log
+error.txt

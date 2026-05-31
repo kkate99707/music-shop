@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru-by">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MUSIC.SHOP — Музыкальные инструменты в Беларуси{% endblock %}</title>
+    
+    {% load static %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/css/intlTelInput.css">
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/js/intlTelInput.min.js"></script>
+    <link rel="stylesheet" href="{% static 'shop/css/default_shadcn_theme.css' %}">
+    <link rel="stylesheet" href="{% static 'shop/css/theme.css' %}">
+    <link rel="stylesheet" href="{% static 'shop/css/index.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <style>
+        .iti { width: 100%; }
+        .iti__country-list { background-color: var(--card); border: 1px solid var(--border); color: var(--foreground); }
+        .iti__country:hover { background-color: var(--accent); }
+        /* AI виджет */
+        #ai-chat-panel { transition: transform 0.35s cubic-bezier(.4,0,.2,1), opacity 0.25s; }
+        #ai-chat-panel.hidden-panel { transform: translateY(20px) scale(0.97); opacity: 0; pointer-events: none; }
+        #ai-messages { scrollbar-width: thin; }
+        .ai-msg-user { background: var(--primary); color: var(--primary-foreground); border-radius: 18px 18px 4px 18px; }
+        .ai-msg-bot { background: var(--muted); color: var(--foreground); border-radius: 18px 18px 18px 4px; }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                border: "var(--border)", input: "var(--input)", ring: "var(--ring)",
+                background: "var(--background)", foreground: "var(--foreground)",
+                primary: { DEFAULT: "var(--primary)", foreground: "var(--primary-foreground)" },
+                muted: { DEFAULT: "var(--muted)", foreground: "var(--muted-foreground)" },
+                accent: { DEFAULT: "var(--accent)", foreground: "var(--accent-foreground)" },
+                card: { DEFAULT: "var(--card)", foreground: "var(--card-foreground)" },
+              },
+              borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
+            }
+          }
+        }
+    </script>
+    <script>
+document.addEventListener('input', function(e) {
+    if (e.target.id === 'search-input') {
+        const query = e.target.value.trim();
+        const resultsBox = document.getElementById('search-results');
+        if (query.length > 1) {
+            fetch(`/search-autocomplete/?q=${query}`)
+                .then(res => res.json())
+                .then(data => {
+                    resultsBox.innerHTML = '';
+                    if (data.results.length > 0) {
+                        data.results.forEach(item => {
+                            resultsBox.innerHTML += `
+                                <a href="${item.url}" class="block px-4 py-2 hover:bg-gray-100 border-b last:border-0">
+                                    <div class="text-sm font-bold text-gray-800">${item.name}</div>
+                                    <div class="text-xs text-gray-500">${item.category}</div>
+                                </a>`;
+                        });
+                        resultsBox.classList.remove('hidden');
+                    } else { resultsBox.classList.add('hidden'); }
+                });
+        } else { resultsBox.classList.add('hidden'); }
+    }
+});
+    </script>
+</head>
+
+<body class="bg-background text-foreground min-h-screen flex flex-col font-sans" style="background-color:var(--background);color:var(--foreground);">
+
+<header class="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
+    <div class="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
+        
+        <div class="flex items-center gap-8">
+            <a href="/" class="text-xl font-bold tracking-tighter text-primary">MUSIC.SHOP</a>
+            <div class="relative group hidden md:block">
+                <a href="{% url 'shop:product_list' %}" class="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors py-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                    Каталог
+                </a>
+            </div>
+        </div>
+
+        <div class="relative w-full max-w-lg">
+            <form action="{% url 'shop:product_list' %}" method="get" class="relative">
+                <input type="text" name="q" id="search-input" placeholder="Найти инструмент..."
+                    class="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary"
+                    autocomplete="off">
+                <div id="search-results" class="absolute z-50 w-full mt-2 bg-white border rounded-lg shadow-2xl hidden overflow-hidden"></div>
+            </form>
+        </div>
+
+        <div class="flex items-center gap-1">
+
+            {% if user.is_authenticated %}
+
+            <!-- ИИ-ПОМОЩНИК кнопка -->
+            <button id="ai-btn" onclick="toggleAIPanel()"
+                class="p-2 hover:bg-muted rounded-full transition-colors relative flex items-center gap-1 text-foreground"
+                title="ИИ-помощник по выбору инструмента">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/>
+                    <path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>
+                </svg>
+            </button>
+
+            <!-- УВЕДОМЛЕНИЯ -->
+            <div class="relative" id="notif-wrapper">
+                <button onclick="toggleNotifDropdown()" class="p-2 hover:bg-muted rounded-full transition-colors relative" title="Уведомления">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                    </svg>
+                    {% if unread_notifications_count > 0 %}
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold px-1">
+                        {{ unread_notifications_count }}
+                    </span>
+                    {% endif %}
+                </button>
+
+                <!-- Дропдаун уведомлений -->
+                <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-background border border-border shadow-2xl z-[70] rounded-lg overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-border">
+                        <span class="text-xs font-bold uppercase tracking-wider">Уведомления</span>
+                        <button onclick="markAllRead()" class="text-[10px] text-muted-foreground hover:text-foreground transition-colors uppercase">Прочитать все</button>
+                    </div>
+                    <div class="max-h-72 overflow-y-auto">
+                        {% if recent_notifications %}
+                            {% for notif in recent_notifications %}
+                            <a href="{% url 'shop:notifications' %}" class="block px-4 py-3 hover:bg-muted/50 border-b border-border/50 last:border-0 transition-colors">
+                                <div class="flex items-start gap-3">
+                                    <div class="mt-0.5 shrink-0">
+                                        {% if notif.notification_type == 'order_status' %}
+                                            <span class="text-blue-500">📦</span>
+                                        {% elif notif.notification_type == 'review_approved' %}
+                                            <span class="text-green-500">✅</span>
+                                        {% elif notif.notification_type == 'discount' %}
+                                            <span class="text-red-500">🏷️</span>
+                                        {% else %}
+                                            <span class="text-gray-400">🔔</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold truncate">{{ notif.title }}</p>
+                                        <p class="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{{ notif.message }}</p>
+                                        <p class="text-[10px] text-muted-foreground/60 mt-1">{{ notif.created_at|date:"d.m.Y H:i" }}</p>
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div class="py-8 text-center text-muted-foreground text-xs">Новых уведомлений нет</div>
+                        {% endif %}
+                    </div>
+                    <div class="px-4 py-2 border-t border-border">
+                        <a href="{% url 'shop:notifications' %}" class="block text-center text-xs font-medium text-primary hover:underline py-1">Все уведомления</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПРОФИЛЬ -->
+            <div class="relative group">
+                <button class="p-2 hover:bg-muted rounded-full transition-colors flex items-center gap-1 text-foreground">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-50"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="absolute right-0 mt-1 w-52 bg-background border border-border shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
+                    <div class="p-3 border-b border-border">
+                        <p class="text-xs text-muted-foreground uppercase tracking-tight">Вы вошли как</p>
+                        <p class="text-sm font-bold truncate">{{ user.username }}</p>
+                    </div>
+                    <div class="p-1">
+                        <a href="/profile/" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Профиль
+                        </a>
+                        {% with employee=request.user.employee %}
+                        {% if employee %}
+                            {% if employee.role == 'admin' %}
+                            <a href="{% url 'shop:admin_dashboard' %}" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-amber-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                                Дашборд
+                            </a>
+                            <a href="{% url 'shop:admin_users' %}" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                Пользователи
+                            </a>
+                            {% endif %}
+                            {% if employee.role == 'moderator' or employee.role == 'admin' %}
+                            <a href="{% url 'shop:moderator_reviews' %}" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                Модерация отзывов
+                            </a>
+                            <a href="{% url 'shop:moderator_support' %}" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                                Поддержка
+                            </a>
+                            {% endif %}
+                            {% if employee.role == 'courier' %}
+                            <a href="{% url 'shop:courier_tasks' %}" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect width="13" height="13" x="9" y="8" rx="2"/><path d="M16 22v-4a2 2 0 0 0-2-2h-4"/><path d="m14 22 2-2 2 2"/></svg>
+                                Мои заказы (курьер)
+                            </a>
+                            {% endif %}
+                        {% else %}
+                        <a href="{% url 'shop:user_orders' %}" class="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                            Мои заказы
+                        </a>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="p-1 border-t border-border">
+                        <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors border-none bg-transparent cursor-pointer text-left">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                                Выйти
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+                <a href="{% url 'login' %}" class="text-sm font-medium hover:text-primary px-3 py-2 transition-colors">Войти</a>
+            {% endif %}
+
+            {% if user.is_authenticated and not request.user.employee %}
+            <a href="{% url 'shop:basket_detail' %}" class="relative p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                {% if basket_total_quantity > 0 %}
+                <span class="absolute -top-1 -right-1 bg-primary text-white text-[10px] rounded-full px-1.5 min-w-[18px] h-[18px] flex items-center justify-center">
+                    {{ basket_total_quantity }}
+                </span>
+                {% endif %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</header>
+
+    <main class="flex-1">
+        <div class="max-w-7xl mx-auto px-6">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="border-t border-border bg-card mt-20" style="border-top:1px solid var(--border);background-color:var(--card);">
+        <div class="max-w-7xl mx-auto py-12 px-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="col-span-2">
+                    <span class="text-lg font-bold tracking-tight">MUSIC.SHOP</span>
+                    <p class="mt-4 text-sm text-muted-foreground max-w-xs">
+                        Профессиональные музыкальные инструменты с доставкой по Минску и всей Беларуси.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold mb-4 text-foreground">Помощь</h4>
+                    <ul class="space-y-2 text-sm text-muted-foreground">
+                        <li><a href="#" class="hover:text-foreground transition-colors">Оплата и доставка</a></li>
+                        <li><a href="#" class="hover:text-foreground transition-colors">Контакты</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 pt-8 border-t border-border text-center text-[10px] text-muted-foreground uppercase tracking-widest">
+                © 2026 Music Shop Belarus. Сделано с любовью.
+            </div>
+        </div>
+    </footer>
+
+<!-- ═══════════════════════════════════════════════
+     ИИ-ПОМОЩНИК — всплывающая боковая панель
+═══════════════════════════════════════════════ -->
+{% if user.is_authenticated %}
+<div id="ai-chat-panel" class="hidden-panel fixed bottom-6 right-6 w-[360px] max-h-[520px] flex flex-col bg-background border border-border shadow-2xl rounded-2xl z-[80] overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+            </div>
+            <div>
+                <p class="text-sm font-bold leading-tight">ИИ-помощник</p>
+                <p class="text-[10px] text-muted-foreground">Подберу инструмент для вас</p>
+            </div>
+        </div>
+        <button onclick="toggleAIPanel()" class="text-muted-foreground hover:text-foreground transition-colors p-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+    </div>
+
+    <div id="ai-messages" class="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+        <div class="ai-msg-bot px-3 py-2 text-sm max-w-[85%]">
+            Привет! Я помогу подобрать инструмент. Расскажите: какой жанр вас интересует, ваш уровень (новичок/опытный) и бюджет?
+        </div>
+    </div>
+
+    <div class="px-3 pb-3 pt-2 border-t border-border shrink-0">
+        <div class="flex gap-2 items-end">
+            <textarea id="ai-input" rows="1" placeholder="Напишите сообщение..."
+                class="flex-1 resize-none border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary bg-background max-h-24"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMessage();}"></textarea>
+            <button onclick="sendAIMessage()" class="bg-primary text-primary-foreground rounded-xl p-2 hover:opacity-90 transition-opacity shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let aiOpen = false;
+let aiHistory = [];
+const aiPanel = document.getElementById('ai-chat-panel');
+const aiMessages = document.getElementById('ai-messages');
+const aiInput = document.getElementById('ai-input');
+
+function toggleAIPanel() {
+    aiOpen = !aiOpen;
+    if (aiOpen) {
+        aiPanel.classList.remove('hidden-panel');
+        aiInput.focus();
+    } else {
+        aiPanel.classList.add('hidden-panel');
+    }
+}
+
+function appendAIMsg(text, role) {
+    const div = document.createElement('div');
+    div.className = role === 'user'
+        ? 'ai-msg-user px-3 py-2 text-sm max-w-[85%] ml-auto'
+        : 'ai-msg-bot px-3 py-2 text-sm max-w-[85%]';
+    div.textContent = text;
+    aiMessages.appendChild(div);
+    aiMessages.scrollTop = aiMessages.scrollHeight;
+    return div;
+}
+
+function getCsrfToken() {
+    const el = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (el) return el.value;
+    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1].trim() : '';
+}
+
+async function sendAIMessage() {
+    const text = aiInput.value.trim();
+    if (!text) return;
+    aiInput.value = '';
+    appendAIMsg(text, 'user');
+    aiHistory.push({ role: 'user', content: text });
+
+    const loading = appendAIMsg('...', 'bot');
+    try {
+        const resp = await fetch('/ai-assistant/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            body: JSON.stringify({ message: text, history: aiHistory })
+        });
+        const data = await resp.json();
+        loading.textContent = data.reply || 'Ошибка ответа.';
+        aiHistory.push({ role: 'assistant', content: data.reply });
+    } catch {
+        loading.textContent = 'Ошибка соединения.';
+    }
+    aiMessages.scrollTop = aiMessages.scrollHeight;
+}
+</script>
+
+<!-- Дропдаун уведомлений JS -->
+<script>
+function toggleNotifDropdown() {
+    const dd = document.getElementById('notif-dropdown');
+    dd.classList.toggle('hidden');
+}
+document.addEventListener('click', function(e) {
+    const wrapper = document.getElementById('notif-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+        document.getElementById('notif-dropdown')?.classList.add('hidden');
+    }
+});
+function markAllRead() {
+    fetch('{% url "shop:mark_all_notifications_read" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken() }
+    }).then(() => {
+        document.querySelectorAll('#notif-dropdown a').forEach(a => {});
+        // Убираем бейдж
+        const badge = document.querySelector('#notif-wrapper .bg-red-500');
+        if (badge) badge.remove();
+        document.getElementById('notif-dropdown').classList.add('hidden');
+    });
+}
+</script>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

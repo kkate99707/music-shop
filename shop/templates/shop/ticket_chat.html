@@ -1,0 +1,48 @@
+{% extends 'shop/base.html' %}
+{% block title %}Чат поддержки #{{ ticket.id }} — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-2xl mx-auto">
+    <a href="{% url 'shop:ticket_list' %}" class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm">← Мои обращения</a>
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-xl font-black">{{ ticket.get_subject_display }}</h1>
+        <span class="px-2 py-0.5 rounded text-[11px] font-bold
+            {% if ticket.status == 'new' %}bg-blue-100 text-blue-700
+            {% elif ticket.status == 'in_progress' %}bg-yellow-100 text-yellow-700
+            {% elif ticket.status == 'resolved' %}bg-green-100 text-green-700
+            {% else %}bg-gray-100 text-gray-600{% endif %}">
+            {{ ticket.get_status_display }}
+        </span>
+    </div>
+
+    <div class="bg-card border border-border rounded-xl p-5 mb-4 space-y-4 max-h-[450px] overflow-y-auto">
+        {% for msg in messages %}
+        <div class="flex gap-3 {% if msg.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+            {% if msg.sender != request.user %}
+            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">П</div>
+            {% endif %}
+            <div class="max-w-[75%]">
+                {% if msg.sender != request.user %}<p class="text-[11px] text-muted-foreground mb-1">Поддержка</p>{% endif %}
+                <div class="{% if msg.sender == request.user %}bg-primary text-primary-foreground rounded-2xl rounded-tr-sm{% else %}bg-muted rounded-2xl rounded-tl-sm{% endif %} px-4 py-2.5 text-sm">
+                    {{ msg.text }}
+                </div>
+                <p class="text-[10px] text-muted-foreground/60 mt-1 {% if msg.sender == request.user %}text-right{% endif %}">{{ msg.created_at|date:"d.m H:i" }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-center text-muted-foreground text-sm italic py-4">Сообщений ещё нет</p>
+        {% endfor %}
+    </div>
+
+    {% if ticket.status != 'closed' and ticket.status != 'resolved' %}
+    <form method="post" class="flex gap-3">
+        {% csrf_token %}
+        <textarea name="text" rows="2" placeholder="Ваше сообщение..."
+            class="flex-1 border border-border bg-background rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+        <button type="submit" class="bg-primary text-primary-foreground px-5 rounded-xl font-medium text-sm hover:opacity-90">Отправить</button>
+    </form>
+    {% else %}
+    <p class="text-center text-muted-foreground text-sm">Обращение закрыто</p>
+    {% endif %}
+</div>
+{% endblock %}

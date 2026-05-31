@@ -1,0 +1,49 @@
+{% extends 'shop/base.html' %}
+{% block title %}{{ title }} — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-2xl mx-auto">
+    <a href="{% url 'shop:admin_discount_list' %}" class="text-sm text-muted-foreground hover:text-foreground mb-6 inline-block">← К скидкам</a>
+    <h1 class="text-2xl font-black mb-8">{{ title }}</h1>
+
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-1.5 text-muted-foreground">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="text-xs text-red-500 mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endfor %}
+
+        <!-- Выбор товаров -->
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-3 text-muted-foreground">Применить к товарам</label>
+            <div class="border border-border rounded-xl overflow-hidden max-h-72 overflow-y-auto">
+                {% regroup products by category as category_list %}
+                {% for cat in category_list %}
+                <div class="px-4 py-2 bg-muted/30 border-b border-border">
+                    <span class="text-[11px] font-bold uppercase text-muted-foreground">{{ cat.grouper }}</span>
+                </div>
+                {% for product in cat.list %}
+                <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 cursor-pointer border-b border-border/50 last:border-0">
+                    <input type="checkbox" name="products" value="{{ product.pk }}"
+                        {% if product.pk in selected %}checked{% endif %}
+                        class="w-4 h-4 accent-primary">
+                    <span class="text-sm flex-1">{{ product.name }}</span>
+                    <span class="text-xs text-muted-foreground">{{ product.price|floatformat:0 }} BYN</span>
+                </label>
+                {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="pt-2">
+            <button type="submit" class="bg-primary text-primary-foreground px-6 py-2.5 rounded-md text-sm font-bold hover:opacity-90 transition-opacity">
+                Сохранить
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

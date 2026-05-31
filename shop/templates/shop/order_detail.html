@@ -1,0 +1,65 @@
+{% extends 'shop/base.html' %}
+ 
+{% block content %}
+<div class="container mx-auto px-4 py-12 max-w-4xl">
+    <div class="mb-8">
+        <a href="{% url 'shop:user_orders' %}" class="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black">← К списку заказов</a>
+        <h1 class="text-4xl font-black uppercase tracking-tighter mt-4">Заказ №{{ order.id }}</h1>
+        <p class="text-gray-400 uppercase text-[10px] font-bold">Оформлен {{ order.created_at|date:"d F Y в H:i" }}</p>
+    </div>
+ 
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div class="md:col-span-2 space-y-6">
+            <div class="border-t-2 border-black pt-4">
+                <h2 class="text-sm font-black uppercase mb-6">Состав заказа</h2>
+                {% for item in order.order_items.all %}
+                <div class="flex gap-4 py-4 border-b border-gray-100 items-center">
+                    <div class="w-20 h-20 bg-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        {% with item.product.photos.first as photo %}
+                            {% if photo %}
+                                <img src="{{ photo.image.url }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <span class="text-[10px] text-gray-400 uppercase font-bold text-center px-1">Нет фото</span>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-bold uppercase text-sm">{{ item.product.name }}</h4>
+                        <p class="text-xs text-gray-400">{{ item.quantity }} шт. × {{ item.price_at_order }} BYN</p>
+                    </div>
+                    <div class="font-black whitespace-nowrap">{{ item.price_at_order }} BYN</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+ 
+        <div class="space-y-8">
+            <div class="bg-gray-50 p-6 border border-gray-200">
+                <h2 class="text-xs font-black uppercase mb-4">Статус и Доставка</h2>
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Текущий статус</p>
+                        <p class="font-bold uppercase">{{ order.get_order_status_display }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Адрес</p>
+                        <p class="text-sm">{{ order.address }}</p>
+                    </div>
+                    <div class="pt-4 border-t border-gray-200">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Итого к оплате</p>
+                        <p class="text-2xl font-black">{{ order.total_price }} BYN</p>
+                    </div>
+                </div>
+            </div>
+ 
+            <div class="border-2 border-black p-6">
+                <h3 class="text-xs font-black uppercase mb-2">Есть вопрос?</h3>
+                <p class="text-xs text-gray-500 mb-4">Если возникли проблемы с доставкой или качеством товара, напишите нам.</p>
+                <a href="{% url 'shop:ticket_create' %}?order_id={{ order.id }}" class="block w-full text-center bg-black text-white py-3 text-[10px] font-black uppercase hover:bg-gray-800 transition-colors">
+                    Задать вопрос
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

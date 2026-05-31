@@ -1,0 +1,89 @@
+{% extends 'shop/base.html' %}
+{% block title %}Модерация отзывов — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-4xl mx-auto">
+    <h1 class="text-3xl font-black uppercase tracking-tighter mb-2">Модерация отзывов</h1>
+    <p class="text-sm text-muted-foreground mb-8">Проверяйте и публикуйте отзывы покупателей</p>
+
+    <!-- ОЖИДАЮТ МОДЕРАЦИИ -->
+    <div class="mb-10">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold">{{ pending|length }}</span>
+            Ожидают проверки
+        </h2>
+        {% if pending %}
+        <div class="space-y-4">
+            {% for review in pending %}
+            <div class="bg-card border-2 border-amber-200 rounded-xl p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">
+                            {{ review.user.username|first|upper }}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">{{ review.user.username }}</p>
+                            <p class="text-xs text-muted-foreground">{{ review.created_at|date:"d.m.Y H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        {% for i in "12345" %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                             fill="{% if forloop.counter <= review.rating %}#f59e0b{% else %}none{% endif %}"
+                             stroke="#f59e0b" stroke-width="1" viewBox="0 0 24 24">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p class="text-xs text-muted-foreground mb-1 font-medium">Товар: <a href="{% url 'shop:product_detail' review.product.pk %}" class="hover:text-primary transition-colors">{{ review.product.name }}</a></p>
+                {% if review.text %}
+                <p class="text-sm leading-relaxed mt-2 mb-4">{{ review.text }}</p>
+                {% else %}
+                <p class="text-sm text-muted-foreground italic mt-2 mb-4">Без текста</p>
+                {% endif %}
+                <div class="flex gap-2">
+                    <a href="{% url 'shop:moderator_approve_review' review.id %}" class="bg-green-600 text-white px-4 py-1.5 rounded text-xs font-bold hover:bg-green-700 transition-colors">✓ Одобрить</a>
+                    <a href="{% url 'shop:moderator_delete_review' review.id %}"
+                        onclick="return confirm('Удалить отзыв?')"
+                        class="bg-red-100 text-red-700 px-4 py-1.5 rounded text-xs font-bold hover:bg-red-200 transition-colors">✕ Удалить</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="py-10 text-center text-muted-foreground text-sm border border-dashed border-border rounded-xl">
+            Новых отзывов на проверке нет
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ОДОБРЕННЫЕ -->
+    <div>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Последние одобренные</h2>
+        {% if approved %}
+        <div class="space-y-3">
+            {% for review in approved %}
+            <div class="bg-card border border-border rounded-xl p-4 flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-semibold">{{ review.user.username }}</span>
+                        <span class="text-xs text-muted-foreground">→</span>
+                        <a href="{% url 'shop:product_detail' review.product.pk %}" class="text-xs text-primary hover:underline truncate">{{ review.product.name }}</a>
+                    </div>
+                    {% if review.text %}<p class="text-sm text-muted-foreground truncate">{{ review.text }}</p>{% endif %}
+                </div>
+                <form method="post" action="{% url 'shop:moderator_delete_review' review.id %}" class="shrink-0">
+                    {% csrf_token %}
+                    <button type="submit" onclick="return confirm('Удалить одобренный отзыв?')"
+                        class="text-xs text-red-500 hover:text-red-700 transition-colors px-2 py-1">Удалить</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-muted-foreground italic">Нет одобренных отзывов</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

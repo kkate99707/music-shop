@@ -1,0 +1,75 @@
+{% extends 'shop/base.html' %}
+{% block title %}Товары — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-black uppercase tracking-tighter">Товары</h1>
+            <div class="flex gap-4 mt-2 text-sm">
+                <a href="{% url 'shop:admin_dashboard' %}" class="text-muted-foreground hover:text-foreground transition-colors">← Дашборд</a>
+                <a href="{% url 'shop:admin_discount_list' %}" class="text-muted-foreground hover:text-foreground transition-colors">Скидки</a>
+            </div>
+        </div>
+        <a href="{% url 'shop:admin_product_create' %}" class="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-bold hover:opacity-90 transition-opacity">+ Новый товар</a>
+    </div>
+
+    <form method="get" class="mb-6 flex gap-3">
+        <input type="text" name="q" value="{{ query }}" placeholder="Поиск по названию или категории..."
+            class="flex-1 border border-border bg-background rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+        <button type="submit" class="bg-muted px-4 py-2 rounded-md text-sm hover:bg-border transition-colors">Найти</button>
+    </form>
+
+    <div class="bg-card border border-border rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-muted/30 border-b border-border">
+                <tr>
+                    <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Фото</th>
+                    <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Название</th>
+                    <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Категория</th>
+                    <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Цена</th>
+                    <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Кол-во</th>
+                    <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Статус</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+                {% for product in products %}
+                <tr class="hover:bg-muted/20 transition-colors">
+                    <td class="px-4 py-3">
+                        {% with product.photos.first as photo %}
+                        {% if photo %}
+                            <img src="{{ photo.image.url }}" class="w-12 h-12 object-cover rounded">
+                        {% else %}
+                            <div class="w-12 h-12 bg-muted rounded flex items-center justify-center text-[10px] text-muted-foreground">Нет</div>
+                        {% endif %}
+                        {% endwith %}
+                    </td>
+                    <td class="px-4 py-3 font-medium">{{ product.name }}</td>
+                    <td class="px-4 py-3 text-muted-foreground text-xs">{{ product.category.name }}</td>
+                    <td class="px-4 py-3 font-semibold">{{ product.price|floatformat:0 }} BYN</td>
+                    <td class="px-4 py-3">
+                        <span class="{% if product.quantity == 0 %}text-red-600 font-bold{% endif %}">{{ product.quantity }}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if product.is_active %}
+                            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-green-100 text-green-700">Активен</span>
+                        {% else %}
+                            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-gray-100 text-gray-500">Скрыт</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-2">
+                            <a href="{% url 'shop:admin_product_edit' product.pk %}" class="text-xs text-primary hover:underline">Изменить</a>
+                            <a href="{% url 'shop:admin_product_delete' product.pk %}" class="text-xs text-red-500 hover:underline">Удалить</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="px-4 py-10 text-center text-muted-foreground italic">Товары не найдены</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'shop/base.html' %}
+{% block title %}Заказ №{{ order.id }} — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-2xl mx-auto">
+    <a href="{% url 'shop:courier_tasks' %}" class="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 text-sm transition-colors">
+        ← Назад к заказам
+    </a>
+
+    <h1 class="text-2xl font-black mb-6">Заказ №{{ order.id }}</h1>
+
+    <div class="bg-card border border-border rounded-xl p-6 mb-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+                <p class="text-xs text-muted-foreground uppercase font-bold mb-1">Клиент</p>
+                <p class="font-semibold">{{ order.user.username|default:"Удалён" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-muted-foreground uppercase font-bold mb-1">Статус</p>
+                <span class="px-2 py-0.5 rounded text-[11px] font-bold
+                    {% if order.order_status == 'sent' %}bg-blue-100 text-blue-700
+                    {% elif order.order_status == 'delivered' %}bg-green-100 text-green-700
+                    {% elif order.order_status == 'completed' %}bg-gray-100 text-gray-600
+                    {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                    {{ order.get_order_status_display }}
+                </span>
+            </div>
+            <div class="col-span-2">
+                <p class="text-xs text-muted-foreground uppercase font-bold mb-1">Адрес доставки</p>
+                <p class="font-semibold">{{ order.address }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-muted-foreground uppercase font-bold mb-1">Оплата</p>
+                <p>{{ order.get_payment_method_display }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-muted-foreground uppercase font-bold mb-1">Сумма</p>
+                <p class="font-bold text-lg">{{ order.total_price|floatformat:0 }} BYN</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Товары -->
+    <div class="bg-card border border-border rounded-xl overflow-hidden mb-6">
+        <div class="px-5 py-3 border-b border-border">
+            <h3 class="text-sm font-bold uppercase tracking-wider">Состав заказа</h3>
+        </div>
+        {% for item in order.order_items.all %}
+        <div class="flex justify-between items-center px-5 py-3 border-b border-border/50 last:border-0 text-sm">
+            <span>{{ item.product.name }}</span>
+            <span class="text-muted-foreground">{{ item.quantity }} шт. × {{ item.price_at_order|floatformat:0 }} BYN</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Обновить статус -->
+    {% if order.order_status != 'completed' %}
+    <div class="bg-card border border-border rounded-xl p-5">
+        <h3 class="text-sm font-bold mb-4">Обновить статус доставки</h3>
+        <form method="post" class="flex flex-wrap gap-3">
+            {% csrf_token %}
+            {% if order.order_status != 'sent' %}
+            <button type="submit" name="status" value="sent"
+                class="bg-blue-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
+                🚚 В доставке
+            </button>
+            {% endif %}
+            {% if order.order_status == 'sent' %}
+            <button type="submit" name="status" value="delivered"
+                class="bg-green-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors">
+                ✓ Доставлен
+            </button>
+            {% endif %}
+            {% if order.order_status == 'delivered' %}
+            <button type="submit" name="status" value="completed"
+                class="bg-gray-800 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-gray-900 transition-colors">
+                ✓✓ Завершить
+            </button>
+            {% endif %}
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

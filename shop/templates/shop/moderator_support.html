@@ -1,0 +1,46 @@
+{% extends 'shop/base.html' %}
+{% block title %}Поддержка — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-4xl mx-auto">
+    <h1 class="text-3xl font-black uppercase tracking-tighter mb-2">Тикеты поддержки</h1>
+    <p class="text-sm text-muted-foreground mb-8">Активные обращения клиентов</p>
+
+    {% if tickets %}
+    <div class="space-y-3">
+        {% for ticket in tickets %}
+        <a href="{% url 'shop:moderator_ticket' ticket.id %}"
+            class="flex items-center justify-between p-5 bg-card border border-border rounded-xl hover:border-primary/40 transition-colors group">
+            <div class="flex items-center gap-4">
+                <div class="text-2xl">
+                    {% if ticket.status == 'new' %}🔵
+                    {% elif ticket.status == 'in_progress' %}🟡
+                    {% elif ticket.status == 'resolved' %}🟢
+                    {% else %}⚪{% endif %}
+                </div>
+                <div>
+                    <p class="font-semibold text-sm">{{ ticket.user.username }} — {{ ticket.get_subject_display }}</p>
+                    <p class="text-xs text-muted-foreground mt-0.5">Обновлён: {{ ticket.updated_at|date:"d.m.Y H:i" }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-2 py-0.5 rounded text-[11px] font-bold
+                    {% if ticket.status == 'new' %}bg-blue-100 text-blue-700
+                    {% elif ticket.status == 'in_progress' %}bg-yellow-100 text-yellow-700
+                    {% elif ticket.status == 'resolved' %}bg-green-100 text-green-700
+                    {% else %}bg-gray-100 text-gray-600{% endif %}">
+                    {{ ticket.get_status_display }}
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted-foreground group-hover:text-primary transition-colors"><path d="m9 18 6-6-6-6"/></svg>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="py-16 text-center text-muted-foreground border border-dashed border-border rounded-xl">
+        <p class="text-lg font-medium">Нет активных обращений</p>
+        <p class="text-sm mt-1">Все тикеты закрыты или не созданы</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'shop/base.html' %}
+{% block title %}{{ title }} — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+<div class="py-10 max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <a href="{% url 'shop:admin_product_list' %}" class="text-sm text-muted-foreground hover:text-foreground transition-colors">← К списку товаров</a>
+            <h1 class="text-2xl font-black mt-2">{{ title }}</h1>
+        </div>
+        {% if product %}
+        <a href="{% url 'shop:product_detail' product.pk %}" target="_blank" class="text-xs text-muted-foreground hover:text-foreground transition-colors">Посмотреть на сайте →</a>
+        {% endif %}
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider mb-1.5 text-muted-foreground">
+                {{ field.label }}{% if field.field.required %} *{% endif %}
+            </label>
+            {{ field }}
+            {% if field.errors %}<p class="text-xs text-red-500 mt-1">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="pt-4">
+            <button type="submit" class="bg-primary text-primary-foreground px-6 py-2.5 rounded-md text-sm font-bold hover:opacity-90 transition-opacity">
+                Сохранить
+            </button>
+        </div>
+    </form>
+
+    {% if product %}
+    <!-- ФОТОГРАФИИ -->
+    <div class="mt-10 pt-8 border-t border-border">
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4">Фотографии</h2>
+
+        <div class="flex flex-wrap gap-4 mb-6">
+            {% for photo in product.photos.all %}
+            <div class="relative group">
+                <img src="{{ photo.image.url }}" class="w-24 h-24 object-cover rounded-lg border border-border">
+                {% if photo.is_main %}
+                <span class="absolute top-1 left-1 bg-primary text-primary-foreground text-[9px] px-1.5 py-0.5 rounded font-bold">Главное</span>
+                {% endif %}
+                <form method="post" class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {% csrf_token %}
+                    <input type="hidden" name="delete_photo" value="{{ photo.pk }}">
+                    <button type="submit" class="bg-red-500 text-white w-5 h-5 rounded-full text-xs flex items-center justify-center hover:bg-red-600">×</button>
+                </form>
+            </div>
+            {% empty %}
+            <p class="text-sm text-muted-foreground italic">Фотографий нет</p>
+            {% endfor %}
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="flex items-end gap-3">
+            {% csrf_token %}
+            <div class="flex-1">
+                <label class="block text-xs font-bold uppercase tracking-wider mb-1.5 text-muted-foreground">Добавить фото</label>
+                <input type="file" name="image" accept="image/*"
+                    class="w-full border border-border bg-background px-3 py-2 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary">
+            </div>
+            <button type="submit" name="add_photo" value="1"
+                class="bg-muted border border-border px-4 py-2 rounded-md text-sm font-medium hover:bg-border transition-colors whitespace-nowrap">
+                Загрузить
+            </button>
+        </form>
+    </div>
+
+    <!-- СКИДКИ -->
+    <div class="mt-8 pt-6 border-t border-border">
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-4">Применённые скидки</h2>
+        {% if product.discounts.all %}
+        <div class="space-y-2">
+            {% for d in product.discounts.all %}
+            <div class="flex justify-between items-center p-3 bg-muted/30 rounded-lg text-sm">
+                <span>{{ d.get_type_display }} — {{ d.amount }}{% if d.type == 'percent' %}%{% else %} BYN{% endif %} (до {{ d.end_date|date:"d.m.Y" }})</span>
+                <a href="{% url 'shop:admin_discount_edit' d.pk %}" class="text-xs text-primary hover:underline">Изменить</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-muted-foreground italic">Скидок нет. <a href="{% url 'shop:admin_discount_create' %}" class="text-primary hover:underline">Создать скидку →</a></p>
+        {% endif %}
+    </div>
+
+    <!-- УДАЛЕНИЕ -->
+    <div class="mt-8 pt-6 border-t border-red-200">
+        <h2 class="text-sm font-bold uppercase tracking-wider mb-2 text-red-600">Опасная зона</h2>
+        <a href="{% url 'shop:admin_product_delete' product.pk %}"
+            class="inline-block bg-red-100 text-red-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-200 transition-colors">
+            Удалить товар
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

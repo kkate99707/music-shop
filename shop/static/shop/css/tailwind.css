@@ -1,0 +1,27 @@
+/* Подключаем базовые слои Tailwind */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Эти переменные Tailwind будет использовать для классов bg-primary, text-foreground и т.д. */
+    /* Мы дублируем их здесь для надежности работы процессора Tailwind */
+    --background: #faf8f5;
+    --foreground: #2d2d2d;
+    --primary: #2d2d2d;
+    --primary-foreground: #ffffff;
+    --muted: #e8e3df;
+    --muted-foreground: #6b6b6b;
+    --border: #ddd5ce;
+    --accent: #d4b5c0;
+    --radius: 0.5rem;
+  }
+}
+
+@layer utilities {
+  /* Если в Figma есть специфичные тени или эффекты, добавляем их сюда */
+  .shadow-card {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+}

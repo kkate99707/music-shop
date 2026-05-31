@@ -1,0 +1,140 @@
+{% extends 'shop/base.html' %}
+{% block title %}Дашборд — MUSIC.SHOP{% endblock %}
+
+{% block content %}
+{# Chart.js грузим здесь — до скриптов инициализации #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<div class="py-10">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-black uppercase tracking-tighter">Дашборд администратора</h1>
+            <p class="text-sm text-muted-foreground mt-1">Аналитика и управление магазином</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'shop:admin_product_list' %}" class="bg-muted border border-border px-4 py-2 rounded-md text-sm font-medium hover:bg-border transition-colors">Товары</a>
+            <a href="{% url 'shop:admin_discount_list' %}" class="bg-muted border border-border px-4 py-2 rounded-md text-sm font-medium hover:bg-border transition-colors">Скидки</a>
+            <a href="{% url 'shop:admin_users' %}" class="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity">Пользователи</a>
+        </div>
+    </div>
+
+    <!-- МЕТРИКИ -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div class="bg-card border border-border rounded-xl p-5">
+            <p class="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Заказов всего</p>
+            <p class="text-3xl font-black">{{ total_orders }}</p>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-5">
+            <p class="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Выручка</p>
+            <p class="text-3xl font-black">{{ total_revenue|floatformat:0 }} <span class="text-lg font-medium">BYN</span></p>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-5">
+            <p class="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Клиентов</p>
+            <p class="text-3xl font-black">{{ total_users }}</p>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-5">
+            <p class="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Товаров</p>
+            <p class="text-3xl font-black">{{ total_products }}</p>
+        </div>
+    </div>
+
+    <!-- ГРАФИКИ -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+        <div class="lg:col-span-2 bg-card border border-border rounded-xl p-6">
+            <h3 class="text-sm font-bold uppercase tracking-wider mb-4">Заказы за 30 дней</h3>
+            <canvas id="ordersChart" height="120"></canvas>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-6">
+            <h3 class="text-sm font-bold uppercase tracking-wider mb-4">Топ-5 товаров</h3>
+            <canvas id="topChart"></canvas>
+        </div>
+    </div>
+
+    <div class="bg-card border border-border rounded-xl p-6 mb-10">
+        <h3 class="text-sm font-bold uppercase tracking-wider mb-4">Выручка за 30 дней</h3>
+        <canvas id="revenueChart" height="90"></canvas>
+    </div>
+
+    <!-- ПОСЛЕДНИЕ ЗАКАЗЫ -->
+    <div class="bg-card border border-border rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-border">
+            <h3 class="text-sm font-bold uppercase tracking-wider">Последние заказы</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-muted/30">
+                    <tr>
+                        <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">№</th>
+                        <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Клиент</th>
+                        <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Сумма</th>
+                        <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Статус</th>
+                        <th class="text-left px-4 py-3 text-xs font-bold uppercase text-muted-foreground">Дата</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for order in recent_orders %}
+                    <tr class="hover:bg-muted/20 transition-colors">
+                        <td class="px-4 py-3 font-mono text-xs">#{{ order.id }}</td>
+                        <td class="px-4 py-3">{{ order.user.username|default:"Удалён" }}</td>
+                        <td class="px-4 py-3 font-semibold">{{ order.total_price|floatformat:0 }} BYN</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-bold
+                                {% if order.order_status == 'completed' %}bg-green-100 text-green-700
+                                {% elif order.order_status == 'canceled' %}bg-red-100 text-red-700
+                                {% elif order.order_status == 'new' %}bg-blue-100 text-blue-700
+                                {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                                {{ order.get_order_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-muted-foreground text-xs">{{ order.created_at|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// Chart.js уже загружен выше — инициализируем графики
+const labels   = {{ chart_labels|safe }};
+const ordersData  = {{ chart_orders|safe }};
+const revenueData = {{ chart_revenue|safe }};
+
+new Chart(document.getElementById('ordersChart'), {
+    type: 'bar',
+    data: {
+        labels,
+        datasets: [{ label: 'Заказов', data: ordersData,
+            backgroundColor: 'rgba(99,102,241,0.7)', borderRadius: 4 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+
+new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [{ label: 'BYN', data: revenueData,
+            borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)',
+            fill: true, tension: 0.4, pointRadius: 3 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } } }
+});
+
+{% if top_products %}
+new Chart(document.getElementById('topChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for p in top_products %}'{{ p.product__name|truncatechars:18 }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{ data: [{% for p in top_products %}{{ p.total_qty }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6'] }]
+    },
+    options: { responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+});
+{% endif %}
+</script>
+{% endblock %}
